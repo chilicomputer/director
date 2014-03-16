@@ -208,7 +208,12 @@ Router.prototype.init = function (r) {
   if (this.history === false) {
     if (dlocHashEmpty() && r) {
       dloc.hash = r;
-    } else if (!dlocHashEmpty()) {
+    }
+    else if (dlocHashEmpty()) {
+      // chillicomputer modified
+      self.dispatch('on', '/');
+    }
+    else if (!dlocHashEmpty()) {
       self.dispatch('on', '/' + dloc.hash.replace(/^(#\/|#|\/)/, ''));
     }
   }
@@ -351,7 +356,8 @@ function paramifyString(str, params, mod) {
       }
     }
   }
-  return mod === str ? "([._a-zA-Z0-9-]+)" : mod;
+  // chillicomputer modify here
+  return mod === str ? "([._a-zA-Z0-9-\\s]+)" : mod;
 }
 
 function regifyString(str, params) {
@@ -454,6 +460,7 @@ Router.prototype.on = Router.prototype.route = function(method, path, route) {
 };
 
 Router.prototype.dispatch = function(method, path, callback) {
+
   var self = this, fns = this.traverse(method, path, this.routes, ""), invoked = this._invoked, after;
   this._invoked = true;
   if (!fns || fns.length === 0) {
@@ -519,6 +526,7 @@ Router.prototype.invoke = function(fns, thisArg, callback) {
 
 Router.prototype.traverse = function(method, path, routes, regexp, filter) {
   var fns = [], current, exact, match, next, that;
+  path = decodeURIComponent( path );
   function filterRoutes(routes) {
     if (!filter) {
       return routes;
@@ -551,6 +559,10 @@ Router.prototype.traverse = function(method, path, routes, regexp, filter) {
     applyFilter(newRoutes);
     return newRoutes;
   }
+  if (dlocHashEmpty()) {
+    // chillicomputer modified
+    path = '/';
+  }
   if (path === this.delimiter && routes[method]) {
     next = [ [ routes.before, routes[method] ].filter(Boolean) ];
     next.after = [ routes.after ].filter(Boolean);
@@ -558,8 +570,10 @@ Router.prototype.traverse = function(method, path, routes, regexp, filter) {
     next.captures = [];
     return filterRoutes(next);
   }
+
   for (var r in routes) {
     if (routes.hasOwnProperty(r) && (!this._methods[r] || this._methods[r] && typeof routes[r] === "object" && !Array.isArray(routes[r]))) {
+
       current = exact = regexp + this.delimiter + r;
       if (!this.strict) {
         exact += "[" + this.delimiter + "]?";
